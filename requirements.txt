@@ -5,3 +5,5 @@ gunicorn
 opencv-python-headless
 requests
 pillow
+qrcode
+pytesseract

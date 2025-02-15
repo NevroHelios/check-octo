@@ -11,8 +11,13 @@ import io
 import os
 import logging
 from modules.ocr import extract_aadhar_number
+from modules.aadhar_processor import AadharCardProcessor
+from modules.barcode_scanner import BarcodeScanner
 
-os.environ['GROQ_API_KEY'] = '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'
+# Initialize processors
+aadhar_processor = AadharCardProcessor()
+barcode_scanner = BarcodeScanner()
+os.environ['GROQ_API_KEY'] = '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'
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -64,20 +69,32 @@ async def video_analysis(video_url: str):
 @app.post("/aadhar")
 async def get_aadhar_number(image_request: ImageRequest):
     try:
-        logger.info("Received request")
-        logger.info(f"Image data length: {len(image_request.image)}")
-        logger.info(f"Image data preview: {image_request.image[:50]}...")
+        logger.info("Received Aadhar card processing request")
         
         if not image_request.image:
             raise HTTPException(status_code=400, detail="No image data provided")
-            
-        # Log the first few characters of the image data to verify format
-        logger.info(f"Image data preview: {image_request.image[:50]}...")
         
-        number = extract_aadhar_number(image_request.image)
+        number = aadhar_processor.extract_aadhar_number(image_request.image)
         logger.info(f"Processing complete. Result: {number}")
         
         return {"aadhar_number": number}
+    except Exception as e:
+        logger.error(f"Error processing request: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+
+# Add new barcode endpoint
+@app.post("/barcode")
+async def scan_barcode(image_request: ImageRequest):
+    try:
+        logger.info("Received barcode scanning request")
+        
+        if not image_request.image:
+            raise HTTPException(status_code=400, detail="No image data provided")
+        
+        result = barcode_scanner.scan_barcode(image_request.image)
+        logger.info(f"Processing complete. Result: {result}")
+        
+        return {"barcode_value": result}
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))

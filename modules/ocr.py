@@ -3,44 +3,45 @@ import base64
 import requests  # Supports HTTP/HTTPS image fetching
 from groq import Groq
 
-def extract_aadhar_number(image_path):
+def extract_aadhar_number(image_data):
     try:
-        # Check if image_path is a URL or a local file path.
-        if image_path.startswith(('http://', 'https://')):
-            response = requests.get(image_path)
-            response.raise_for_status()
-            image_bytes = response.content
+            # Determine if input is base64 or URL
+        if image_data.startswith(('http://', 'https://')):
+            # Handle URL case
+            image_content = image_data
         else:
-            # On Windows, handle long file paths by adding the extended-length prefix if needed.
-            if os.name == "nt":
-                if not image_path.startswith("\\\\?\\"):
-                    image_path = "\\\\?\\" + os.path.abspath(image_path)
-            with open(image_path, "rb") as image_file:
-                image_bytes = image_file.read()
-
-        # Convert image bytes to base64
-        encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+            # Handle base64 case - assume it's a PNG image
+            image_content = f"data:image/png;base64,{image_data}"
 
         # Initialize Groq client
         client = Groq(
             api_key=os.getenv("GROQ_API_KEY")
         )
 
-        # Prepare prompt for OCR
-        prompt = f"""
-        This is a base64 encoded image of an Aadhar card: {encoded_image}
-        Please extract and return only the 12-digit Aadhar number from this image.
-        """
-
-        # Get response from Groq
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama-3.2-11b-vision-preview",
+        # Get response from Groq using the chat_completion pattern
+        chat_completion = client.chat.completions.create(
+            messages=[
+            {
+                "role": "user",
+                "content": [
+                {
+                    "type": "text",
+                    "text": "Please extract and return only the 12-digit Aadhar number from this image. If a valid number is detected return that number only. If not return Unknown."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": image_content}
+                }
+                ]
+            }
+            ],
+            model="llama-3.2-90b-vision-preview",
+            temperature=0.0,
             max_tokens=100
         )
 
         # Extract Aadhar number from response
-        aadhar_text = response.choices[0].message.content
+        aadhar_text = chat_completion.choices[0].message.content
         # Clean and validate the number (should be 12 digits)
         aadhar_number = ''.join(filter(str.isdigit, aadhar_text))
         
