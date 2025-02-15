@@ -3,9 +3,6 @@ import base64
 # import requests
 from groq import Groq
 
-
-os.environ['GROQ_API_KEY'] = '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'
-
 # Access the environment variable
 api_key = os.environ.get('GROQ_API_KEY')
 
