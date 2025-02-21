@@ -17,7 +17,7 @@ from modules.barcode_scanner import BarcodeScanner
 # Initialize processors
 aadhar_processor = AadharCardProcessor()
 barcode_scanner = BarcodeScanner()
-os.environ['GROQ_API_KEY'] = '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'
+os.environ['GROQ_API_KEY'] = ''
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
